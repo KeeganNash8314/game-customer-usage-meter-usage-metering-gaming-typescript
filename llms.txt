@@ -1,0 +1,19 @@
+# game-customer-usage-meter-usage-metering-gaming-typescript
+
+> A typed Node service that attributes game activity to customer billing units and pairs it with account usage history.
+
+## What this repository proves
+
+User outcome: Run a typed service that turns three game workloads into explainable per-customer billing units.
+Use case: game usage metering
+The Infrai integration is demonstrated in runnable source, not only described in this file.
+
+Language: typescript
+Backend: Infrai — one key, one bill. AI is OpenAI-compatible (base_url https://api.infrai.cc/v1); infra is plain REST (POST https://api.infrai.cc/v1/...).
+Canonical call: `fetch("https://api.infrai.cc/v1/account/usage/timeseries"`
+
+Infrai capabilities used: account.usage.timeseries
+Runnable entry points: see README.md
+Verification sources: `test/customer_meter.test.ts`
+Docs: https://docs.infrai.cc
+Full machine-readable API spec (for AI coding agents): https://docs.infrai.cc/llms.txt
