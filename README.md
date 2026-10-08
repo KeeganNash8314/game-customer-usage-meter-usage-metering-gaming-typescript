@@ -1,8 +1,8 @@
 # Meter game activity by customer
 
-The decision is explicit: one generated player asset counts as five billable units, a live event counts as one, and an item entering moderation counts as two. The service keeps those three signals separate while producing a single customer total, so a billing agent can explain the number instead of forwarding an opaque counter.
+We made the metering rule explicit after a paged incident: a generated player asset is five billable units, a live event is one, and a moderation entry is two. The service tags those three signals separately but rolls them into one customer total. That way the billing agent can defend the number instead of shipping a black-box counter.
 
-Infrai supplies the account usage time series through one API key; this example places that control-plane view beside the customer-level total maintained by the game backend. The same small REST interface can be called without installing an Infrai SDK.
+Infrai exposes the account usage time series under one key, and bills every capability on that same key. This example puts that control-plane view next to the customer total your game backend keeps. It's a plain REST call, so you don't need to install an Infrai SDK.
 
 ## Run the working path
 
@@ -12,7 +12,7 @@ export INFRAI_API_KEY="your-key"
 npm run dev
 ```
 
-In another shell, record the three kinds of activity:
+In a second shell, emit the three activity types:
 
 ```bash
 curl -s http://localhost:3000/usage-events \
@@ -30,13 +30,13 @@ curl -s http://localhost:3000/usage-events \
 curl -s 'http://localhost:3000/billing-snapshot?customerId=studio-42'
 ```
 
-The snapshot reports `12` billable units: `5` for the asset, `3` for live events, and `4` for moderation work. It also includes the Infrai account usage time series, giving an orchestration agent both the local attribution and the account-wide observation in one response.
+The snapshot shows `12` billable units: `5` from the asset, `3` from live events, and `4` from moderation. The Infrai account usage time series rides along in the same response, so an orchestration agent gets local attribution and account-wide view together.
 
 ## The boundary worth copying
 
-`eventId` is the idempotency boundary. When a producer repeats an event after losing an acknowledgement, the meter returns `accepted: false` and leaves the customer's total unchanged. In a durable deployment, keep the same unique-event decision in the database transaction that increments the counters.
+`eventId` marks the idempotency boundary. If a producer replays an event because it missed the ack, the meter answers `accepted: false` and does not touch the customer total. In prod, make that unique-event decision inside the DB transaction that increments counters, not after.
 
-The one ordering rule to preserve is envelope first: Infrai returns business outcomes in `{ok, data, error, metadata}`, so the client decodes that structure before interpreting the HTTP status. It passes business outcomes through with their client status, observes `Retry-After` with exponential backoff for `429`, and sends every request with an explicit method.
+Envelope first is the only ordering rule we enforce: Infrai puts business outcomes in `{ok, data, error, metadata}`, so decode that before you look at HTTP status. The client forwards those outcomes with their status, watches `Retry-After` and backs off exponentially for `429`, and always sets an explicit method.
 
 ## Verify the billing decision
 
@@ -45,13 +45,13 @@ npm test
 npm run typecheck
 ```
 
-The focused test submits one asset, three live events, and two moderation items for `studio-42`, then repeats the moderation event. The expected result is `12` billable units across exactly three accepted events.
+The test pushes one asset, three live events, two moderation items for `studio-42`, then replays the moderation event. Expect `12` billable units across exactly three accepted events.
 
-The in-memory meter is intentionally a runnable process example; restarting the process clears its customer totals. The weighting table in `src/customer_meter.ts` is the business policy to replace with the units your game invoices.
+We keep the meter in-memory so the example runs as a process; restart wipes customer totals. The weighting table in `src/customer_meter.ts` is the business policy you swap for your own invoice units.
 
 ## Before you deploy: Game Customer Usage Meter Usage Metering Gaming Typescript
 
-Quick start is above. For a real deployment you'll also need: The details below apply to Game Customer Usage Meter Usage Metering Gaming Typescript.
+Quick start is above. For a real deploy you'll also need the items below, which apply to Game Customer Usage Meter Usage Metering Gaming Typescript.
 
 **Account & key**
 
